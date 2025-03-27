@@ -1,0 +1,219 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Powered Smart Task Scheduler</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background: url('https://source.unsplash.com/1600x900/?business,technology,office') no-repeat center center fixed;
+            background-size: cover;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+        }
+        .container {
+            max-width: 600px;
+            width: 90%;
+            background: rgba(255, 255, 255, 0.95);
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 0 15px rgba(0, 0, 0, 0.2);
+        }
+        h1 {
+            text-align: center;
+            color: #333;
+            font-size: 24px;
+        }
+        .task-form label {
+            font-weight: bold;
+            display: block;
+            margin: 10px 0 5px;
+        }
+        .task-form input, .task-form select, .task-form button {
+            width: 100%;
+            padding: 10px;
+            margin-bottom: 10px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+        }
+        .task-form button {
+            background-color: #007bff;
+            color: white;
+            font-weight: bold;
+            cursor: pointer;
+        }
+        .task-form button:hover {
+            background-color: #0056b3;
+        }
+        .task-list, .completed-task ul, .dropped-task ul {
+            list-style: none;
+            padding: 0;
+        }
+        .task-item {
+            background: #fff;
+            padding: 10px;
+            margin-bottom: 10px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-left: 5px solid;
+            border-radius: 5px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+        }
+        .high { border-color: red; }
+        .medium { border-color: orange; }
+        .low { border-color: green; }
+        .complete-btn, .drop-btn, .clear-btn, .undo-btn {
+            background: red;
+            color: white;
+            border: none;
+            padding: 5px 10px;
+            cursor: pointer;
+            border-radius: 5px;
+        }
+        .clear-btn {
+            background: #ff5722;
+            width: 100%;
+            margin-top: 10px;
+        }
+        .undo-btn {
+            background: #4CAF50;
+            width: 100%;
+            margin-top: 10px;
+        }
+        .completed-task, .dropped-task {
+            margin-top: 20px;
+            background: rgba(255, 255, 255, 0.9);
+            padding: 10px;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Smart Task Scheduler</h1>
+        <div class="task-form">
+            <label for="taskName">Task Name</label>
+            <input type="text" id="taskName" placeholder="Enter Task Name">
+
+            <label for="taskDeadline">Deadline Date</label>
+            <input type="date" id="taskDeadline">
+
+            <label for="taskPriority">Priority</label>
+            <select id="taskPriority">
+                <option value="High">High</option>
+                <option value="Medium">Medium</option>
+                <option value="Low">Low</option>
+            </select>
+
+            <label for="taskDependencies">Dependencies</label>
+            <input type="text" id="taskDependencies" placeholder="Enter dependencies (comma-separated)">
+
+            <button onclick="addTask()">Add Task</button>
+            <button class="clear-btn" onclick="clearTasks()">Clear All Tasks</button>
+            <button class="undo-btn" onclick="undoLastAction()">Undo Last Action</button>
+        </div>
+        
+        <ul class="task-list" id="taskList"></ul>
+        
+        <div class="completed-task">
+            <h2>Completed Tasks</h2>
+            <ul id="completedTaskList"></ul>
+        </div>
+        
+        <div class="dropped-task">
+            <h2>Dropped Tasks</h2>
+            <ul id="droppedTaskList"></ul>
+        </div>
+    </div>
+    
+    <script>
+        let tasks = [];
+        let lastAction = null;
+
+        function addTask() {
+            let name = document.getElementById("taskName").value.trim();
+            let deadline = document.getElementById("taskDeadline").value;
+            let priority = document.getElementById("taskPriority").value;
+            let dependencies = document.getElementById("taskDependencies").value.trim().split(',').filter(dep => dep);
+            
+            if (!name || !deadline) {
+                alert("Task Name and Deadline are required!");
+                return;
+            }
+            
+            let newTask = { name, priority, dependencies, due_date: deadline, status: "Pending" };
+            tasks.push(newTask);
+            resetForm();
+            renderTasks();
+        }
+
+        function resetForm() {
+            document.getElementById("taskName").value = "";
+            document.getElementById("taskDeadline").value = "";
+            document.getElementById("taskPriority").value = "Medium";
+            document.getElementById("taskDependencies").value = "";
+        }
+
+        function renderTasks() {
+            let taskList = document.getElementById("taskList");
+            let completedTaskList = document.getElementById("completedTaskList");
+            let droppedTaskList = document.getElementById("droppedTaskList");
+            taskList.innerHTML = "";
+            completedTaskList.innerHTML = "";
+            droppedTaskList.innerHTML = "";
+
+            tasks.forEach((task, index) => {
+                let listItem = document.createElement("li");
+                listItem.className = `task-item ${task.priority.toLowerCase()}`;
+                listItem.innerHTML = `
+                    ${task.name} - ${task.due_date} 
+                    <button class="complete-btn" onclick="completeTask(${index})">Complete</button>
+                    <button class="drop-btn" onclick="dropTask(${index})">Drop</button>
+                `;
+
+                if (task.status === "Pending") {
+                    taskList.appendChild(listItem);
+                } else if (task.status === "Completed") {
+                    completedTaskList.appendChild(listItem);
+                } else if (task.status === "Dropped") {
+                    droppedTaskList.appendChild(listItem);
+                }
+            });
+        }
+
+        function completeTask(index) {
+            lastAction = [...tasks];
+            tasks[index].status = "Completed";
+            renderTasks();
+        }
+
+        function dropTask(index) {
+            lastAction = [...tasks];
+            tasks[index].status = "Dropped";
+            renderTasks();
+        }
+
+        function clearTasks() {
+            lastAction = [...tasks];
+            tasks = [];
+            renderTasks();
+        }
+
+        function undoLastAction() {
+            if (lastAction) {
+                tasks = [...lastAction];
+                lastAction = null;
+                renderTasks();
+            }
+        }
+    </script>
+</body>
+</html>
